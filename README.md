@@ -5,7 +5,7 @@
   </a>
 </p>
 
-<h1 align="center">Cotabby [beta]</h1>
+<h1 align="center">Cotabby Neural Fork</h1>
 
 <p align="center"><em>Open-source, local-first AI autocomplete for macOS.</em></p>
 
