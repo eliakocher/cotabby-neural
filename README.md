@@ -1,55 +1,55 @@
 
 <p align="center">
-  <a href="https://cotabby.app" target="_blank">
-    <img height="150" alt="Cotabby logo" src=".github/assets/readme/logo.png" />
-  </a>
+  <img height="150" alt="Cotabby logo" src=".github/assets/readme/logo.png" />
 </p>
 
-<h1 align="center">Cotabby [beta]</h1>
+<h1 align="center">Cotabby Neural</h1>
 
-<p align="center"><em>Open-source, local-first AI autocomplete for macOS.</em></p>
-
-<p align="center">
-  <a href="https://cotabby.app">
-  <img width="200" alt="landing-page" src="https://github.com/user-attachments/assets/c28fbb4b-6dfb-4403-a040-1df61daf4df2" /></a>
-
-
-<a href="https://github.com/FuJacob/cotabby/releases/latest/download/Cotabby.dmg">
-<img width="200" alt="download" src="https://github.com/user-attachments/assets/d5cb4454-d2ab-41d3-9d36-171d44ebfc52" /></a>
-
-
-<a href="https://ko-fi.com/cotabby" target="_blank">
-<img width="200" alt="support" src=".github/assets/readme/support-cotabby.png" />
-</a></p>
+<p align="center"><em>Cotabby's local AI autocomplete, running silently on the Apple Neural Engine.</em></p>
 
 <p align="center">
-  <a href="https://github.com/FuJacob/cotabby/actions/workflows/build.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/FuJacob/cotabby/build.yml?branch=main" /></a>
+  <a href="https://github.com/FuJacob/cotabby"><img alt="Fork of FuJacob/cotabby" src="https://img.shields.io/badge/fork%20of-FuJacob%2Fcotabby-blue?logo=github" /></a>
   <a href="LICENSE"><img alt="License: AGPL v3" src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" /></a>
-  <a href="https://github.com/FuJacob/cotabby/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/FuJacob/cotabby" /></a>
-  <a href="https://github.com/FuJacob/cotabby/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/FuJacob/cotabby/total" /></a>
-  <a href="https://github.com/FuJacob/cotabby/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/FuJacob/cotabby?style=flat" /></a>
+  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%2027%2B%20%C2%B7%20Apple%20Silicon-lightgrey" />
   <img alt="Swift" src="https://img.shields.io/badge/Swift-F05138?logo=swift&amp;logoColor=white" />
-  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%2014%2B-lightgrey" />
 </p>
 
-<p align="center">
-  <sub>Cotabby is free and open-source — maintained by two students. If it's useful to you, please consider supporting Cotabby's future.</sub>
-</p>
+> [!NOTE]
+> This is a personal fork of **[Cotabby](https://github.com/FuJacob/cotabby)**, created by
+> [@FuJacob](https://github.com/FuJacob) and maintained with [@jam-cai](https://github.com/jam-cai)
+> and [@akramj13](https://github.com/akramj13). It adds one engine that runs on the Neural Engine and
+> otherwise tracks upstream. For the official app, releases, and support, go to the
+> [original project](https://github.com/FuJacob/cotabby) or [cotabby.app](https://cotabby.app).
 
 ---
 
-## What It Does
+## Why this fork
 
-Cotabby adds AI autocomplete to almost any text field on your Mac. As you type, a gray suggestion appears inline next to your cursor. Press `Tab` to accept it a word at a time, or keep typing to ignore it.
+Cotabby's Open Source engine runs a small model on the GPU through llama.cpp. On my Mac, every
+keystroke's burst of GPU work made the hardware whine audibly (coil whine). Apple Intelligence is
+silent, but it is a chat model and handles half-typed words badly.
 
-The default Apple Intelligence and Open Source engines run on your Mac. No account or telemetry is
-required. An optional OpenAI-compatible engine can connect to a server you configure.
+This fork runs the same kind of small **base** model on the **Apple Neural Engine** through Apple's
+Core AI framework instead: silent, local, and about 110–125 ms per suggestion.
 
-## Demo
+## What's different from upstream
 
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=p3TIgxQFQGE"><strong>Watch on YouTube →</strong></a>
-</p>
+- **A new Neural Engine engine.** It uses the same prompt and output path as the Open Source engine,
+  but the model is a Core AI bundle running on the Neural Engine. The default model is
+  Qwen3-0.6B-Base, picked after a Neural Engine-only quality comparison against Llama-3.2-1B.
+- **macOS 27 and Apple Silicon only.** Core AI exists only on macOS 27, so the whole app now
+  targets it, and it builds with Xcode 27.2.
+- **No prebuilt releases and no auto-updates.** Build it from source. Upstream changes are merged
+  in by hand.
+
+Everything else is upstream Cotabby. [FORK.md](FORK.md) lists every change, how the model is made,
+and how to merge new upstream code.
+
+## What Cotabby does
+
+Cotabby adds AI autocomplete to almost any text field on your Mac. As you type, a gray suggestion
+appears inline next to your cursor. Press `Tab` to accept it a word at a time, or keep typing to
+ignore it.
 
 <div align="center">
 
@@ -60,139 +60,87 @@ required. An optional OpenAI-compatible engine can connect to a server you confi
 
 </div>
 
-## Features
-
-- **Ghost-text autocomplete** — AI suggestions inline in almost any macOS text field; `Tab` accepts a word at a time
-- **Emoji autocomplete** — type `:rocket:` and accept it without leaving the field
-- **Inline macros** — type `/` for quick math, unit and currency conversion, dates, and random values
-- **One-key autocorrect** — fix a likely typo with a single keystroke
-- **Prediction controls** — choose whether to predict ahead, suggest within words, and show following words
-- **Optional screen context** — control visual context independently of the local prediction settings
-
-## Privacy
-
-Privacy is the whole point, so Cotabby's default engines keep generation on your Mac:
-
-- Apple Intelligence and Open Source generation run on-device.
-- The optional OpenAI-compatible engine sends a bounded request only to the endpoint you configure;
-  that endpoint can be loopback, on your local network, or a public HTTPS service.
-- No analytics, no telemetry, no crash reporting.
-- A normal install never writes what you type to disk.
-- Apart from a configured endpoint, the network is used for model downloads and update checks, not
-  suggestion generation.
+- **Ghost-text autocomplete:** suggestions inline in almost any macOS text field; `Tab` accepts a
+  word at a time.
+- **Emoji autocomplete:** type `:rocket:` and accept it without leaving the field.
+- **Inline macros:** type `/` for quick math, unit and currency conversion, dates, and random values.
+- **One-key autocorrect:** fix a likely typo with a single keystroke.
+- **Optional screen context:** turn visual context on or off separately from the other prediction
+  settings.
 
 ## Engines
 
-Cotabby generates suggestions in three ways. You choose which in Settings → Engine:
+Pick one in Settings → Engine:
 
-- **Apple Intelligence** — Apple's model, built into macOS 26 or later on supported Macs. Nothing to download.
-- **Open Source** — a small AI model you download that runs entirely on your Mac. Works on any supported Mac (macOS 14+), with or without Apple Intelligence.
-- **OpenAI-compatible** — a completion or chat endpoint you configure, including local Ollama,
-  another LAN host, or a public HTTPS service. Endpoint credentials are stored in Keychain.
+- **Neural Engine** *(this fork)*: a base model on the Apple Neural Engine. No GPU work, so no coil
+  whine. The first load of a model, and the first load after each macOS update, takes a few minutes
+  while Core AI prepares it. An hourglass in the menu bar shows that this is happening.
+- **Apple Intelligence:** Apple's built-in on-device model.
+- **Open Source:** a downloadable GGUF base model running on the GPU through
+  [llama.cpp](https://github.com/ggerganov/llama.cpp).
+- **OpenAI-compatible:** a completion or chat endpoint you configure (local Ollama, a LAN host, or
+  a public HTTPS service).
 
-If your Mac supports Apple Intelligence, that's the easiest place to start. Otherwise, use the Open Source engine and pick one of the built-in models:
+## Build and run
 
-| Model          | Size    | Good for                          |
-| -------------- | ------- | --------------------------------- |
-| `tabby-2-nano` | ~0.8 GB | Older or low-memory Macs; fastest |
-| `tabby-2-mini` | ~1.4 GB | A solid everyday balance          |
-| `tabby-2-base` | ~4.5 GB | Higher-quality suggestions        |
-| `tabby-2-pro`  | ~5.0 GB | Best quality                      |
+Needs macOS 27, Apple Silicon, and Xcode 27.2. [CONTRIBUTING.md](CONTRIBUTING.md) covers the full
+build and test workflow.
 
-Download any of them straight from Cotabby's menu bar.
-
-<details>
-<summary><strong>Advanced:</strong> model files, custom models, and how generation works</summary>
-
-<br />
-
-Under the hood, the Open Source engine runs local GGUF *base* models in-process through [llama.cpp](https://github.com/ggerganov/llama.cpp) (via [CotabbyInference](https://github.com/FuJacob/cotabbyinference)). Instead of prompting an instruction-tuned chat model, Cotabby treats the model as a pure text continuer and conditions it on your name, writing style, language, and on-screen context.
-
-| Model          | File                             | Size    | Source                                                                       |
-| -------------- | -------------------------------- | ------- | ---------------------------------------------------------------------------- |
-| `tabby-2-nano` | `Qwen3.5-0.8B-Base.i1-Q6_K.gguf` | ~0.8 GB | [Hugging Face](https://huggingface.co/mradermacher/Qwen3.5-0.8B-Base-i1-GGUF) |
-| `tabby-2-mini` | `Qwen3.5-2B-Base.i1-Q4_K_M.gguf` | ~1.4 GB | [Hugging Face](https://huggingface.co/mradermacher/Qwen3.5-2B-Base-i1-GGUF)   |
-| `tabby-2-base` | `gemma-4-E2B.i1-Q6_K.gguf`       | ~4.5 GB | [Hugging Face](https://huggingface.co/mradermacher/gemma-4-E2B-i1-GGUF)       |
-| `tabby-2-pro`  | `gemma-4-E4B.i1-Q4_K_M.gguf`     | ~5.0 GB | [Hugging Face](https://huggingface.co/mradermacher/gemma-4-E4B-i1-GGUF)       |
-
-**Bring your own model.** Any GGUF small enough to run on-device works. Drop a `.gguf` file into Cotabby's models folder and refresh the model list from the menu bar. Browse the [unsloth GGUF collection](https://huggingface.co/unsloth) for more variants — smaller quants (`Q3_K_M`, `Q4_K_S`) trade quality for size; larger models give better completions at the cost of memory and per-token latency.
-
-For the full suggestion pipeline, see [ARCHITECTURE.md](ARCHITECTURE.md).
-
-</details>
-
-## Install
-
-**Compatibility:** macOS 14.0 or later. The Apple Intelligence engine needs macOS 26 or later on a supported Mac; on older systems, use the Open Source engine.
-
-### Homebrew
-
-```sh
-brew tap FuJacob/cotabby
-brew install --cask cotabby
+```bash
+git clone https://github.com/eliakocher/cotabby-neural.git cotabby
+cd cotabby
+scripts/prepare_cotabby_workspace.sh
+scripts/build_and_run.sh run Release
 ```
 
-Upgrade later with `brew upgrade --cask cotabby`. The tap lives at [FuJacob/homebrew-cotabby](https://github.com/FuJacob/homebrew-cotabby).
+Then put a Neural Engine model bundle in `~/Library/Application Support/Cotabby Dev/NeuralEngine/`
+and select **Neural Engine** in Settings. [FORK.md](FORK.md) has the command that exports
+Qwen3-0.6B-Base into that format.
 
-### Manual download
-
-Grab the latest release from [cotabby.app](https://cotabby.app) and drag Cotabby into your Applications folder.
+`build_and_run.sh` starts the app in debug mode, which logs every prompt to
+`~/Library/Logs/Cotabby Dev/`. Quit it and reopen it from Finder for everyday use.
 
 ## Using Cotabby
 
-Start typing in almost any text field. When a gray suggestion appears:
+When a gray suggestion appears:
 
-- **`Tab`** — accept the next word. (Prefer whole phrases? Switch this in Settings → Acceptance Mode.)
-- **`` ` `` (backtick)** — accept the entire suggestion at once.
-- **`Esc`**, or just keep typing — dismiss it.
+- **`Tab`:** accept the next word. To accept whole phrases instead, change Settings → Acceptance
+  Mode.
+- **`` ` `` (backtick):** accept the entire suggestion.
+- **`Esc`**, or keep typing: dismiss it.
 
-Every shortcut is rebindable under Settings → Shortcuts.
+Every shortcut can be changed under Settings → Shortcuts.
 
-## Permissions
+## Permissions and privacy
 
-Cotabby works inside other apps, so macOS asks for a few permissions. Each one maps to a specific feature, and Cotabby walks you through them on first launch:
+- **Accessibility:** read the text and cursor position in the field you're typing in, and insert
+  what you accept.
+- **Input Monitoring:** notice your typing and detect the accept keys.
+- **Screen Recording** *(optional)*: visual context, and matching the ghost text's font to the
+  app's text.
 
-- **Accessibility** — read the text and cursor position in the field you're typing in, and insert what you accept.
-- **Input Monitoring** — notice your typing so it knows when to suggest, and detect the accept keys.
-- **Screen Recording** *(optional)* — capture the area around your cursor for visual context, and to match the ghost text's font, size, and position to the app's own text where the app doesn't report them. Leave it off and everything else still works.
+The Neural Engine, Apple Intelligence, and Open Source engines all generate on your Mac. There is no
+analytics, telemetry, or crash reporting. Cotabby never suggests or inserts text in password and
+other secure fields.
 
-Cotabby blocks generation, presentation, and insertion in password and other secure fields.
+## Credits
 
-## Local Development
-
-Requires Xcode and Command Line Tools. Apple Silicon is strongly recommended for local model performance. For setup, build, test, and contribution workflow details, start with [CONTRIBUTING.md](CONTRIBUTING.md).
-
-```bash
-git clone https://github.com/FuJacob/cotabby.git Cotabby
-cd Cotabby
-scripts/prepare_cotabby_workspace.sh
-open build/cotabby-dependencies/Cotabby.xcworkspace
-```
-
-Use the **Cotabby Dev** scheme for local work. The workspace temporarily supplies the native
-APIs in our pending CotabbyInference patch; preparation is automatic in CI and release builds.
-
-If you want to understand the runtime and suggestion pipeline before contributing, read [ARCHITECTURE.md](ARCHITECTURE.md).
-
-## Contributing
-
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, build, and PR guidelines, and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations. For a tour of the runtime and suggestion pipeline, read [ARCHITECTURE.md](ARCHITECTURE.md).
-
-## Acknowledgments
-
-- [llama.cpp](https://github.com/ggerganov/llama.cpp), [CotabbyInference](https://github.com/FuJacob/cotabbyinference), [Sparkle](https://github.com/sparkle-project/Sparkle), and [swift-log](https://github.com/apple/swift-log) for runtime, updates, and logging.
-- [LaunchAtLogin](https://github.com/sindresorhus/LaunchAtLogin-Modern) for macOS login-item integration.
-- Apple's FoundationModels, Accessibility, SwiftUI, and AppKit for on-device generation and macOS integration.
-- [GitHub gemoji](https://github.com/github/gemoji) and Hugging Face for the emoji data and downloadable models.
-- [SymSpell](https://github.com/wolfgarbe/SymSpell) by Wolf Garbe (MIT) for multilingual autocorrect; frequency dictionaries derive from [Google Ngrams](https://books.google.com/ngrams) (CC BY 3.0) and licensed SCOWL/Hunspell word lists.
-- Everyone who filed issues, tested prereleases, and sent pull requests.
-
-## Created by
-
-Originally created by <a href="https://github.com/FuJacob">@FuJacob</a>, now developed and maintained by <a href="https://github.com/FuJacob">@FuJacob</a>, <a href="https://github.com/jam-cai">@jam-cai</a>. and <a href="https://github.com/akramj13">@akramj13</a>
+- **[Cotabby](https://github.com/FuJacob/cotabby)** by [@FuJacob](https://github.com/FuJacob),
+  [@jam-cai](https://github.com/jam-cai), and [@akramj13](https://github.com/akramj13). This fork
+  is their app with one engine added. If you find it useful,
+  [support the original project](https://ko-fi.com/cotabby).
+- [apple/coreai-models](https://github.com/apple/coreai-models) (Core AI model export and runtime)
+  and [Qwen3](https://huggingface.co/Qwen/Qwen3-0.6B-Base) (the default Neural Engine model).
+- Upstream's acknowledgments still apply: [llama.cpp](https://github.com/ggerganov/llama.cpp),
+  [CotabbyInference](https://github.com/FuJacob/cotabbyinference),
+  [Sparkle](https://github.com/sparkle-project/Sparkle), [swift-log](https://github.com/apple/swift-log),
+  [LaunchAtLogin](https://github.com/sindresorhus/LaunchAtLogin-Modern),
+  [GitHub gemoji](https://github.com/github/gemoji), and [SymSpell](https://github.com/wolfgarbe/SymSpell)
+  with its frequency dictionaries (see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)).
 
 ## License
 
-Cotabby is licensed under the [GNU Affero General Public License v3.0](LICENSE). You can use, study, modify, and redistribute the app, but if you distribute a modified version or make one available to users over a network, you must provide the corresponding source code under the same license.
-
-Third-party dependencies, emoji data, and downloadable model weights keep their own licenses and usage terms. Bundled third-party notices (SymSpell and the autocorrect frequency dictionary) are reproduced in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+[GNU Affero General Public License v3.0](LICENSE), the same as upstream Cotabby. This is a modified
+version, changed by [@eliakocher](https://github.com/eliakocher) starting in October 2026. The
+changes are listed in [FORK.md](FORK.md), and the full source is this repository. Third-party
+dependencies and model weights keep their own licenses.

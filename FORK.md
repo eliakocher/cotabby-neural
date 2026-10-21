@@ -6,7 +6,8 @@
 Apple's Core AI framework. Everything else is upstream Cotabby. The fork's work lives on the
 `neural-engine` branch.
 
-This file stands alone (no edits to README) so merging upstream never conflicts with it.
+This file is the fork's own record. `README.md` is the fork's public front page: it is rewritten,
+credits the original authors, and links back to upstream.
 
 ## Why
 
@@ -53,7 +54,8 @@ Small edits to upstream files (wiring):
   pinned to a revision. `Config/Package.resolved`: its pins. `Cotabby.xcodeproj`: regenerated.
 - `scripts/phrase_eval.py` and `PhrasePredictionEvalTests.swift`: `--neural-engine-bundle` runs
   the quality eval on the Neural Engine.
-- `AGENTS.md`, `SOURCE_LAYOUT.md`, `CONTRIBUTING.md`: docs.
+- `AGENTS.md`, `SOURCE_LAYOUT.md`, `CONTRIBUTING.md`: docs. `README.md`: rewritten as the fork's
+  front page.
 
 ## The model (not in git)
 
@@ -111,6 +113,9 @@ git merge upstream/main
 
 Where conflicts usually happen, and how to resolve them:
 
+- **`README.md`:** every upstream README edit conflicts, because ours is rewritten. Keep ours
+  (`git checkout --ours README.md && git add README.md`). Then check whether upstream's change
+  (a new feature, permission, or shortcut) belongs in our README too.
 - **`Cotabby.xcodeproj/project.pbxproj`:** never hand-merge it. Resolve `project.yml` first, then
   run `xcodegen generate` and stage the project.
 - **`project.yml`:** keep upstream's changes, plus our two: every `deploymentTarget` stays `27.0`
