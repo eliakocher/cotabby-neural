@@ -26,8 +26,8 @@ review, validate, and revert safely.
 
 You need:
 
-- macOS 14.0 or later for running the app and tests. Apple Intelligence runtime work requires
-  macOS 26 or later.
+- macOS 27 or later for running the app and tests, and Xcode 27.2 or later to build: the Neural
+  Engine engine links Apple's Core AI, which exists only in the macOS 27.2 SDK.
 - Xcode with Command Line Tools installed.
 - An Apple ID added to Xcode (Settings > Accounts) if you want to launch the app from the IDE. A
   free account is enough; the paid Apple Developer Program is not required for local development.

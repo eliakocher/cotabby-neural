@@ -700,6 +700,7 @@ final class SuggestionSettingsModel: ObservableObject {
         case .appleIntelligence: return .appleIntelligence
         case .llamaOpenSource: return .llama(filename: batteryModelFilename)
         case .openAICompatible: return .openAICompatible(modelName: batteryEndpointModelName)
+        case .neuralEngine: return .neuralEngine
         }
     }
 
@@ -709,6 +710,7 @@ final class SuggestionSettingsModel: ObservableObject {
         case .appleIntelligence: return .appleIntelligence
         case .llamaOpenSource: return .llama(filename: pluggedInModelFilename)
         case .openAICompatible: return .openAICompatible(modelName: pluggedInEndpointModelName)
+        case .neuralEngine: return .neuralEngine
         }
     }
 

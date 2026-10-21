@@ -10,6 +10,7 @@ import SwiftUI
 struct MenuBarStatusLabelView: View {
     @ObservedObject var suggestionCoordinator: SuggestionCoordinator
     @ObservedObject var suggestionSettings: SuggestionSettingsModel
+    @ObservedObject var neuralEngineRuntime: NeuralEngineRuntimeManager
 
     var body: some View {
         HStack(spacing: 2) {
@@ -23,6 +24,15 @@ struct MenuBarStatusLabelView: View {
                 Image(systemName: "pause.fill")
                     .font(.system(size: 8, weight: .bold))
                     .accessibilityLabel(inactiveAccessibilityLabel)
+            }
+
+            // The one-time Neural Engine preparation runs for minutes with no suggestions. The
+            // icon is the only status visible without opening anything, so it carries the
+            // explanation; ordinary cached loads take seconds and are not worth a flicker.
+            if neuralEngineRuntime.isPreparing {
+                Image(systemName: "hourglass")
+                    .font(.system(size: 8, weight: .bold))
+                    .accessibilityLabel("Preparing the Neural Engine model")
             }
 
             if suggestionSettings.isMenuBarWordCountVisible,

@@ -15,7 +15,7 @@ final class SuggestionEngineSelectionPolicyTests: XCTestCase {
     }
 
     func test_isSelectable_otherEnginesIgnoreAppleAvailability() {
-        for engine in [SuggestionEngineKind.llamaOpenSource, .openAICompatible] {
+        for engine in [SuggestionEngineKind.llamaOpenSource, .openAICompatible, .neuralEngine] {
             for available in [true, false] {
                 XCTAssertTrue(
                     SuggestionEngineSelectionPolicy.isSelectable(engine, foundationModelAvailable: available),

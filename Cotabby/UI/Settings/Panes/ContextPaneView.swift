@@ -85,7 +85,7 @@ struct ContextPaneView: View {
     /// Cotabby can only speak for itself: what the endpoint retains is that server's policy.
     static func livePreviewPrivacyNote(for engine: SuggestionEngineKind) -> String {
         switch engine {
-        case .appleIntelligence, .llamaOpenSource:
+        case .appleIntelligence, .llamaOpenSource, .neuralEngine:
             return "Nothing here is saved or shared; it only exercises the on-device model."
         case .openAICompatible:
             return "Cotabby doesn't save this text, but like any other field it's sent to your configured endpoint, "

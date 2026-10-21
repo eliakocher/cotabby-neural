@@ -34,8 +34,12 @@ final class PhrasePredictionEvalTests: XCTestCase {
         let corpus = try JSONDecoder().decode(PhrasePredictionCorpus.self, from: data)
         try corpus.validate(canonical: options.corpusURL == nil)
         let selected = try options.select(corpus.phrases)
-        let shards = try PhrasePredictionReplayPlan.shards(phraseCount: selected.count, workers: options.workers)
-        let managers = try shards.map { _ in try LlamaEvalRuntime.makeManager() }
+        // A Core AI bundle path switches the replay to the Neural Engine engine. The Neural Engine is
+        // one device, so concurrent workers would only queue on it: that run always uses one worker.
+        let neuralEngineBundle = environment["COTABBY_EVAL_NEURAL_ENGINE_BUNDLE"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+        let shards = try PhrasePredictionReplayPlan.shards(
+            phraseCount: selected.count, workers: neuralEngineBundle == nil ? options.workers : 1)
+        let managers = try neuralEngineBundle == nil ? shards.map { _ in try LlamaEvalRuntime.makeManager() } : []
         // Keep every context alive until the task group has drained, including on cancellation.
         // Each manager owns a separate native core, sampler and KV cache: sharing a manager would
         // serialize all workers on that core's autocomplete lock.
@@ -47,9 +51,17 @@ final class PhrasePredictionEvalTests: XCTestCase {
             try Task.checkCancellation()
             try await manager.prepare()
         }
+        var loadedNeuralEngine: NeuralEngineRuntimeManager?
+        if let neuralEngineBundle {
+            loadedNeuralEngine = try await Self.readyNeuralEngineManager(bundle: neuralEngineBundle)
+        }
+        // Immutable from here on: the worker tasks below capture it concurrently.
+        let neuralEngineManager = loadedNeuralEngine
+        defer { neuralEngineManager?.stop() }
         let configuration = options.configuration
         let settings = CotabbyTestFixtures.settingsSnapshot(
-            selectedEngine: .llamaOpenSource, selectedWordCountPreset: options.wordCountPreset,
+            selectedEngine: neuralEngineBundle == nil ? .llamaOpenSource : .neuralEngine,
+            selectedWordCountPreset: options.wordCountPreset,
             isClipboardContextEnabled: false, isSurfaceContextEnabled: options.promptVariant != "content-only",
             userName: options.profile == "personalized" && options.promptVariant != "content-only" ? "Alex" : "",
             responseLanguages: options.profile == "personalized" && options.promptVariant != "content-only" ? ["English"] : [],
@@ -72,16 +84,26 @@ final class PhrasePredictionEvalTests: XCTestCase {
         configurationRecord["selectionSplit"] = options.split
         configurationRecord["selectionSplitSeed"] = String(options.splitSeed)
         configurationRecord["selectionScreenPerCategory"] = String(options.screenPerCategory)
-        let modelPath = try XCTUnwrap(managers.first?.diagnostics.modelFilePath)
-        guard managers.allSatisfy({ $0.diagnostics.modelFilePath == modelPath }) else {
-            throw Options.invalid("All workers must evaluate the same model")
+        let modelPath: String
+        if let neuralEngineBundle {
+            // Core AI writes its own content hash beside the compiled graph; it identifies the export.
+            modelPath = neuralEngineBundle.path
+            configurationRecord["engine"] = "neural_engine"
+            configurationRecord["modelSHA256"] = try Self.fileSHA256(neuralEngineBundle
+                .appendingPathComponent("\(neuralEngineBundle.lastPathComponent).aimodel/main.hash"))
+        } else {
+            modelPath = try XCTUnwrap(managers.first?.diagnostics.modelFilePath)
+            guard managers.allSatisfy({ $0.diagnostics.modelFilePath == modelPath }) else {
+                throw Options.invalid("All workers must evaluate the same model")
+            }
+            configurationRecord["engine"] = "llama"
+            configurationRecord["modelSHA256"] = try Self.fileSHA256(URL(fileURLWithPath: modelPath))
         }
-        configurationRecord["modelSHA256"] = try Self.fileSHA256(URL(fileURLWithPath: modelPath))
         let metadata = PhrasePredictionReport.Metadata(
             corpusSHA256: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined(),
             corpusVersion: corpus.version, model: modelPath, seed: try XCTUnwrap(configuration.randomSeed),
             mode: options.mode, configuration: configurationRecord, runLabel: options.label,
-            contextMode: options.contextMode, workerCount: managers.count
+            contextMode: options.contextMode, workerCount: shards.count
         )
         try FileManager.default.createDirectory(at: options.output, withIntermediateDirectories: true)
         let journal = try ReplayJournal(output: options.output)
@@ -90,15 +112,16 @@ final class PhrasePredictionEvalTests: XCTestCase {
         encoder.outputFormatting = [.sortedKeys]
         // Persist identity before inference, so interrupted journals can still be interpreted.
         try encoder.encode(metadata).write(to: options.output.appendingPathComponent("metadata.json"), options: .atomic)
-        print("REPLAY workers=\(managers.count); independent native contexts; latency includes worker contention")
+        print("REPLAY workers=\(shards.count); independent native contexts; latency includes worker contention")
         // MainActor isolates the journal and AppKit spell checker. Each awaited generation runs
         // on its manager's detached native task, allowing all three cores to compute concurrently.
         // A throwing task group cancels its siblings and waits for their cleanup before returning.
         try await withThrowingTaskGroup(of: Void.self) { group in
             for (workerIndex, indices) in shards.enumerated() {
-                let manager = managers[workerIndex]
                 group.addTask { @MainActor in
-                    let engine = LlamaSuggestionEngine(runtimeManager: manager)
+                    let engine: any SuggestionGenerating = neuralEngineManager
+                        .map { NeuralEngineSuggestionEngine(runtimeManager: $0) }
+                        ?? LlamaSuggestionEngine(runtimeManager: managers[workerIndex])
                     let spellChecker = CurrentWordSpellChecker()
                     for index in indices {
                         try Task.checkCancellation()
@@ -224,7 +247,7 @@ final class PhrasePredictionEvalTests: XCTestCase {
 
     private func observe(
         _ checkpoint: PhrasePredictionScorer.Checkpoint, scenario: PhrasePredictionCorpus.ScreenScenario,
-        condition: PhrasePredictionScorer.ContextCondition, engine: LlamaSuggestionEngine,
+        condition: PhrasePredictionScorer.ContextCondition, engine: any SuggestionGenerating,
         spellChecker: CurrentWordSpellChecker, settings: SuggestionSettingsSnapshot,
         configuration: SuggestionConfiguration, promptVariant: String
     ) async throws -> PhrasePredictionObservation {
@@ -278,6 +301,33 @@ final class PhrasePredictionEvalTests: XCTestCase {
                          latencyMilliseconds: elapsed(), error: error.localizedDescription,
                          screenExcerpt: request.visualContextSummary, prompt: request.prompt)
         }
+    }
+
+    /// Loads a Core AI bundle through the production Neural Engine manager and waits until it can
+    /// generate. Its model pick goes to a throwaway defaults suite so the user's settings stay
+    /// untouched. The first load in this test host compiles the model for the Neural Engine
+    /// (minutes); later runs reuse Core AI's on-disk cache.
+    private static func readyNeuralEngineManager(bundle: URL) async throws -> NeuralEngineRuntimeManager {
+        let suiteName = "cotabby-phrase-eval-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let manager = NeuralEngineRuntimeManager(
+            locator: NeuralEngineModelLocator(directoryURL: bundle.deletingLastPathComponent()),
+            defaults: defaults
+        )
+        guard manager.availableModels.contains(where: { $0.id == bundle.lastPathComponent }) else {
+            throw Options.invalid("Not a Neural Engine model bundle: \(bundle.path)")
+        }
+        manager.selectModel(id: bundle.lastPathComponent)
+        manager.startIfNeeded()
+        let deadline = Date().addingTimeInterval(20 * 60)
+        while !manager.isReady {
+            if let failure = manager.state.failureDetail { throw Options.invalid(failure) }
+            guard Date() < deadline else { throw Options.invalid("The Neural Engine model did not load within 20 minutes") }
+            try await Task.sleep(for: .seconds(1))
+        }
+        print("NEURAL ENGINE ready: \(manager.state.summary)")
+        return manager
     }
 
     /// Hash in bounded chunks; loading a multi-GB GGUF into Data would distort memory pressure

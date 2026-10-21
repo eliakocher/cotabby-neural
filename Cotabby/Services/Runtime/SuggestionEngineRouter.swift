@@ -11,6 +11,7 @@ final class SuggestionEngineRouter {
     private let foundationModelEngine: any SuggestionGenerating
     private let llamaEngine: any SuggestionGenerating
     private let openAICompatibleEngine: any SuggestionGenerating
+    private let neuralEngine: any SuggestionGenerating
     private let performanceMetricsStore: PerformanceMetricsStore
     private let qualityMetricsStore: SuggestionQualityMetricsStore
     /// Closure that returns the currently selected llama model filename (e.g. `Qwen3-0.6B-Q8_0.gguf`).
@@ -18,6 +19,7 @@ final class SuggestionEngineRouter {
     /// on the concrete runtime type — useful for tests that want to fake the model label.
     private let llamaModelNameProvider: @MainActor () -> String?
     private let endpointModelNameProvider: @MainActor () -> String?
+    private let neuralEngineModelNameProvider: @MainActor () -> String?
 
     init(
         suggestionSettings: SuggestionSettingsModel,
@@ -27,7 +29,9 @@ final class SuggestionEngineRouter {
         qualityMetricsStore: SuggestionQualityMetricsStore,
         llamaModelNameProvider: @escaping @MainActor () -> String?,
         openAICompatibleEngine: (any SuggestionGenerating)? = nil,
-        endpointModelNameProvider: @escaping @MainActor () -> String? = { nil }
+        endpointModelNameProvider: @escaping @MainActor () -> String? = { nil },
+        neuralEngine: (any SuggestionGenerating)? = nil,
+        neuralEngineModelNameProvider: @escaping @MainActor () -> String? = { nil }
     ) {
         self.suggestionSettings = suggestionSettings
         self.foundationModelEngine = foundationModelEngine
@@ -39,6 +43,10 @@ final class SuggestionEngineRouter {
         self.qualityMetricsStore = qualityMetricsStore
         self.llamaModelNameProvider = llamaModelNameProvider
         self.endpointModelNameProvider = endpointModelNameProvider
+        self.neuralEngine = neuralEngine ?? UnavailableSuggestionEngine(
+            message: "The Neural Engine engine is not available in this build."
+        )
+        self.neuralEngineModelNameProvider = neuralEngineModelNameProvider
     }
 
     func generateSuggestion(for request: SuggestionRequest) async throws -> SuggestionResult {
@@ -113,6 +121,14 @@ final class SuggestionEngineRouter {
             recordPerformanceMetric(modelName: endpointModelNameProvider() ?? "Local Endpoint", latency: result.latency)
             recordQualityOutcome(result)
             return result
+        case .neuralEngine:
+            // No fallback on purpose: this engine exists so nothing runs on the GPU. While its model
+            // is still loading the engine reports `unavailable`, and the user simply gets no ghost.
+            CotabbyLogger.suggestion.debug("Routing to Neural Engine engine", metadata: metadata)
+            let result = try await neuralEngine.generateSuggestion(for: request, onPartial: onPartial)
+            recordPerformanceMetric(modelName: neuralEngineModelNameProvider() ?? "Neural Engine", latency: result.latency)
+            recordQualityOutcome(result)
+            return result
         }
     }
 
@@ -146,6 +162,8 @@ final class SuggestionEngineRouter {
             return "llama"
         case .openAICompatible:
             return "openai_compatible"
+        case .neuralEngine:
+            return "neural_engine"
         }
     }
 
@@ -156,6 +174,7 @@ final class SuggestionEngineRouter {
         await foundationModelEngine.resetCachedGenerationContext()
         await llamaEngine.resetCachedGenerationContext()
         await openAICompatibleEngine.resetCachedGenerationContext()
+        await neuralEngine.resetCachedGenerationContext()
     }
 
     /// Forwards the warmup hook only to the currently selected engine. The inactive backend has
@@ -169,6 +188,8 @@ final class SuggestionEngineRouter {
             await llamaEngine.prewarm(for: request)
         case .openAICompatible:
             await openAICompatibleEngine.prewarm(for: request)
+        case .neuralEngine:
+            await neuralEngine.prewarm(for: request)
         }
     }
 

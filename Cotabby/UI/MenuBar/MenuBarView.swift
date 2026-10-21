@@ -22,6 +22,7 @@ struct MenuBarView: View {
     @ObservedObject var suggestionSettings: SuggestionSettingsModel
     @ObservedObject var foundationModelAvailabilityService: FoundationModelAvailabilityService
     @ObservedObject var powerSourceMonitor: PowerSourceMonitor
+    @ObservedObject var neuralEngineRuntime: NeuralEngineRuntimeManager
     let appUpdateManager: AppUpdateManager
     let onOpenSettings: () -> Void
     let onReportFeedback: () -> Void
@@ -199,6 +200,10 @@ struct MenuBarView: View {
                         .foregroundStyle(.orange)
                 }
 
+                if suggestionSettings.selectedEngine == .neuralEngine {
+                    neuralEngineStatusRow
+                }
+
                 if suggestionSettings.selectedEngine.supportsLocalModelManagement {
                     modelRow
                 }
@@ -267,6 +272,32 @@ struct MenuBarView: View {
                 .buttonStyle(.borderless)
                 .controlSize(.small)
             }
+        }
+    }
+
+    /// Shown only while the Neural Engine model is not serving yet. The first load of a model, and
+    /// the first load after every macOS update, specializes it for the Neural Engine for several
+    /// minutes with no suggestions; without this line that reads as a broken engine. A ready
+    /// model shows nothing, so the menu stays quiet when everything works.
+    @ViewBuilder
+    private var neuralEngineStatusRow: some View {
+        switch neuralEngineRuntime.state {
+        case .starting(let detail), .loading(let detail):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                ProgressView()
+                    .controlSize(.mini)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        case .failed(let detail):
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
+        case .idle, .ready:
+            EmptyView()
         }
     }
 
@@ -385,6 +416,8 @@ struct MenuBarView: View {
                     profile = .llama(filename: runtimeModel.selectedModelFilename ?? "")
                 case .openAICompatible:
                     profile = .openAICompatible(modelName: suggestionSettings.openAICompatibleModelName)
+                case .neuralEngine:
+                    profile = .neuralEngine
                 }
                 applyProfileForCurrentPowerSource(profile)
             }

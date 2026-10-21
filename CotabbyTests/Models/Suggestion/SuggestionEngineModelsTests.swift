@@ -25,8 +25,15 @@ final class SuggestionEngineModelsTests: XCTestCase {
         // would silently reset every saved engine choice.
         XCTAssertEqual(
             SuggestionEngineKind.allCases.map(\.rawValue),
-            ["appleIntelligence", "llamaOpenSource", "openAICompatible"]
+            ["appleIntelligence", "llamaOpenSource", "openAICompatible", "neuralEngine"]
         )
+    }
+
+    func test_neuralEngineKind_isLabelledAndManagesNoGGUFModels() {
+        XCTAssertEqual(SuggestionEngineKind.neuralEngine.displayLabel, "Neural Engine")
+        // Its Core AI bundles live in their own drop-in folder, outside the GGUF download surfaces.
+        XCTAssertFalse(SuggestionEngineKind.neuralEngine.supportsLocalModelManagement)
+        XCTAssertEqual(PowerProfile.neuralEngine.engine, .neuralEngine)
     }
 
     func test_suggestionEngineKind_onlyOpenSourceManagesLocalModels() {

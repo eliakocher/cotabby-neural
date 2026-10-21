@@ -20,6 +20,7 @@ struct SettingsContainerView: View {
     @ObservedObject var openAICompatibleConnectionModel: OpenAICompatibleConnectionModel
     @ObservedObject var foundationModelAvailabilityService: FoundationModelAvailabilityService
     @ObservedObject var runtimeModel: RuntimeBootstrapModel
+    @ObservedObject var neuralEngineRuntime: NeuralEngineRuntimeManager
     @ObservedObject var modelDownloadManager: ModelDownloadManager
     @ObservedObject var huggingFaceSearchService: HuggingFaceSearchService
     @ObservedObject var performanceMetricsStore: PerformanceMetricsStore
@@ -102,7 +103,8 @@ struct SettingsContainerView: View {
                 foundationModelAvailable: foundationModelAvailabilityService.isAvailable,
                 llamaRuntimeFailedReason: runtimeModel.state.failureDetail,
                 endpointConfigurationError: endpointConfigurationError,
-                endpointConnectionFailedReason: openAICompatibleConnectionModel.state.failureDetail
+                endpointConnectionFailedReason: openAICompatibleConnectionModel.state.failureDetail,
+                neuralEngineFailedReason: neuralEngineRuntime.state.failureDetail
             )
         )
     }
@@ -117,6 +119,7 @@ struct SettingsContainerView: View {
                 permissionManager: permissionManager,
                 foundationModelAvailabilityService: foundationModelAvailabilityService,
                 runtimeModel: runtimeModel,
+                neuralEngineRuntime: neuralEngineRuntime,
                 openAICompatibleConnectionModel: openAICompatibleConnectionModel,
                 attentionCategories: attentionCategories
             )
@@ -139,6 +142,7 @@ struct SettingsContainerView: View {
                 openAICompatibleConnectionModel: openAICompatibleConnectionModel,
                 foundationModelAvailabilityService: foundationModelAvailabilityService,
                 runtimeModel: runtimeModel,
+                neuralEngineRuntime: neuralEngineRuntime,
                 modelDownloadManager: modelDownloadManager,
                 huggingFaceSearchService: huggingFaceSearchService
             )

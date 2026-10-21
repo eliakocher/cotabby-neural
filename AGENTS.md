@@ -8,15 +8,16 @@ Cotabby is a macOS menu bar app for local-first inline autocomplete. The core lo
 2. Monitor global keyboard input without stealing focus.
 3. Decide whether the field, permissions, settings, and runtime are eligible.
 4. Build an autocomplete request from the focused text context and optional visual context.
-5. Generate through Apple Intelligence, in-process llama.cpp, or a configured OpenAI-compatible
-   endpoint.
+5. Generate through Apple Intelligence, in-process llama.cpp, Core AI on the Neural Engine, or a
+   configured OpenAI-compatible endpoint.
 6. Normalize the model output into a short continuation.
 7. Render ghost text near the caret.
 8. Insert accepted chunks when the user presses `Tab` while keeping the remaining tail alive.
 
-Apple Intelligence and llama.cpp run on the Mac. The endpoint backend may send the same bounded
-request to loopback, LAN, or public HTTPS when the user explicitly selects it. Do not add or broaden
-hosted transmission without explicit user scope and clear disclosure.
+Apple Intelligence, llama.cpp, and the Neural Engine engine (Core AI) run on the Mac. The endpoint
+backend may send the same bounded request to loopback, LAN, or public HTTPS when the user explicitly
+selects it. Do not add or broaden hosted transmission without explicit user scope and clear
+disclosure.
 
 ## Learning-First Collaboration
 
@@ -164,12 +165,23 @@ from Accessibility and Input Monitoring.
 
 Runtime generation is split by responsibility:
 
-- `SuggestionEngineRouter`: selects Apple Intelligence, Open Source, or the configured
-  OpenAI-compatible endpoint and owns the narrow Apple-to-llama language fallback.
+- `SuggestionEngineRouter`: selects Apple Intelligence, Open Source, Neural Engine, or the
+  configured OpenAI-compatible endpoint and owns the narrow Apple-to-llama language fallback (the
+  Neural Engine engine deliberately has no fallback).
 - `FoundationModelSuggestionEngine`: Apple on-device generation path.
 - `LlamaSuggestionEngine`: request-to-prompt, llama result handling, and cache reset handoff.
 - `OpenAICompatibleSuggestionEngine`: completion/chat transport, SSE streaming, and Ollama preload
   behavior for the configured endpoint.
+- `NeuralEngineSuggestionEngine`: the same base-model prompt and output path as llama, but the model
+  is an exported Core AI bundle running on the Apple Neural Engine (no GPU, so no coil whine).
+  `NeuralEngineRuntimeCore` is an actor around Core AI's `StaticShapeEngine` with an explicit FIFO
+  gate (the actor alone is re-entrant at every `await`); it rebuilds what CotabbyInference does
+  natively in pure `Support/Runtime/NeuralEngine/` code: token classes from `tokenizer.json`
+  (`NeuralEngineVocabulary`), the sampling chain and masks (`NeuralEngineSampler`), healing
+  matching (`TokenHealingVocabulary`), and exact-prefix KV reuse (`NeuralEnginePrefixReuse`).
+  Bundles are dropped into `~/Library/Application Support/<app>/NeuralEngine/`; the first load of
+  each one specializes it for the Neural Engine (minutes, cached per OS build). Core AI requires
+  macOS 27 and the Xcode 27.2 SDK, which is why every target's deployment target is macOS 27.
 - `LlamaRuntimeManager`: UI-facing runtime state, model selection, warmup, and lifecycle control.
 - `LlamaRuntimeCore`: explicitly serialized native boundary around mutable llama.cpp pointers,
   prompt tokenization, KV-cache reuse, built-in sampler delegation, cancellation, and shutdown.

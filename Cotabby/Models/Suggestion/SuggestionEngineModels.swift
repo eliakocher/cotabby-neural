@@ -7,10 +7,14 @@ import Foundation
 /// The important architectural distinction is:
 /// - a local GGUF file is a model option inside the llama runtime
 /// - Apple Intelligence vs. local llama is an engine choice above the runtime layer
+///
+/// `neuralEngine` runs an exported base model on Apple's Neural Engine through Core AI instead of
+/// llama.cpp on the GPU: same raw-continuation prompts, silent hardware, macOS 27 only.
 enum SuggestionEngineKind: String, CaseIterable, Equatable, Hashable, Sendable, Identifiable {
     case appleIntelligence
     case llamaOpenSource
     case openAICompatible
+    case neuralEngine
 
     var id: String { rawValue }
 
@@ -22,6 +26,8 @@ enum SuggestionEngineKind: String, CaseIterable, Equatable, Hashable, Sendable, 
             return "Open Source"
         case .openAICompatible:
             return "Local Endpoint"
+        case .neuralEngine:
+            return "Neural Engine"
         }
     }
 
@@ -36,6 +42,8 @@ enum SuggestionEngineKind: String, CaseIterable, Equatable, Hashable, Sendable, 
             return "cpu.fill"
         case .openAICompatible:
             return "network"
+        case .neuralEngine:
+            return "brain"
         }
     }
 
@@ -45,7 +53,9 @@ enum SuggestionEngineKind: String, CaseIterable, Equatable, Hashable, Sendable, 
             return false
         case .llamaOpenSource:
             return true
-        case .openAICompatible:
+        case .openAICompatible, .neuralEngine:
+            // Neural Engine bundles are exported offline and dropped into their own folder; the
+            // GGUF download and browser surfaces do not apply to them.
             return false
         }
     }
@@ -60,6 +70,8 @@ enum PowerProfile: Equatable, Hashable {
     case appleIntelligence
     case llama(filename: String)
     case openAICompatible(modelName: String)
+    /// Uses whichever bundle is selected in the Neural Engine section; no per-state model.
+    case neuralEngine
 
     /// The engine this profile selects. Settings persists engine + filename separately, so this is
     /// the bridge from those two stored fields to a single picker selection (and back).
@@ -71,6 +83,8 @@ enum PowerProfile: Equatable, Hashable {
             return .llamaOpenSource
         case .openAICompatible:
             return .openAICompatible
+        case .neuralEngine:
+            return .neuralEngine
         }
     }
 }

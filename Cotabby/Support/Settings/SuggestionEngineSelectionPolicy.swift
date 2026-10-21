@@ -24,7 +24,9 @@ enum SuggestionEngineSelectionPolicy {
         switch engine {
         case .appleIntelligence:
             return foundationModelAvailable
-        case .llamaOpenSource, .openAICompatible:
+        case .llamaOpenSource, .openAICompatible, .neuralEngine:
+            // The Neural Engine pane explains a missing model bundle; the app itself only runs on
+            // macOS 27, where Core AI always exists.
             return true
         }
     }

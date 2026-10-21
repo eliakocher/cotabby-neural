@@ -266,7 +266,8 @@ final class LlamaSuggestionEngine {
 
     /// One shared mapping from a request to engine options so prewarm prefills decode under the
     /// exact sampling fingerprint the following generation will validate its KV reuse against.
-    private static func makeGenerationOptions(for request: SuggestionRequest) -> LlamaGenerationOptions {
+    /// `NeuralEngineSuggestionEngine` uses it too, so both local engines read a request the same way.
+    static func makeGenerationOptions(for request: SuggestionRequest) -> LlamaGenerationOptions {
         LlamaGenerationOptions(
             maxPredictionTokens: request.maxPredictionTokens,
             temperature: request.temperature,

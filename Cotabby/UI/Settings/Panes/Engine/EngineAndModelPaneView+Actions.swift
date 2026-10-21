@@ -34,6 +34,9 @@ extension EngineAndModelPaneView {
             }
             guard let detail = openAICompatibleConnectionModel.state.failureDetail else { return nil }
             return SettingsPaneCallout(tone: .warning, message: detail)
+        case .neuralEngine:
+            guard case .failed(let detail) = neuralEngineRuntime.state else { return nil }
+            return SettingsPaneCallout(tone: .warning, message: detail)
         }
     }
 

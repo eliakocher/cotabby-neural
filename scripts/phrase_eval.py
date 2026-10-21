@@ -487,7 +487,15 @@ def run(args):
     phrases = show_plan(args)
     corpus_path = getattr(args, "corpus", None) or CORPUS
     overrides = sampling_overrides(args)
-    workers = min(args.workers, len(phrases))
+    bundle = getattr(args, "neural_engine_bundle", None)
+    if bundle and args.model:
+        raise ValueError("--model and --neural-engine-bundle are mutually exclusive")
+    if bundle and not (bundle / "metadata.json").is_file():
+        raise ValueError("--neural-engine-bundle must name an exported Core AI model bundle folder")
+    if bundle and getattr(args, "runtime_checks", False):
+        raise ValueError("--runtime-checks exercises the llama runtime; it does not apply to --neural-engine-bundle")
+    # The Neural Engine is one device; parallel workers would only queue on it.
+    workers = 1 if bundle else min(args.workers, len(phrases))
     if platform.system() != "Darwin":
         raise ValueError("Live evaluation requires macOS and Xcode")
     if args.model and (not args.model.is_file() or args.model.suffix.lower() != ".gguf"):
@@ -502,7 +510,8 @@ def run(args):
         "gitStatus": git_output("status", "--short"), "mode": args.mode, "contextMode": args.context,
         "corpusSHA256": hashlib.sha256(corpus_path.read_bytes()).hexdigest(),
         "phraseIDs": [p["id"] for p in phrases], "platform": platform.platform(),
-        "modelPath": str(args.model.resolve()) if args.model else "app runtime default",
+        "modelPath": str(bundle.resolve()) if bundle else str(args.model.resolve()) if args.model else "app runtime default",
+        "engine": "neural_engine" if bundle else "llama",
         "workerCount": workers,
         "promptVariant": getattr(args, "prompt_variant", "production"),
         "profile": getattr(args, "profile", "plain"),
@@ -578,6 +587,8 @@ def run(args):
         }
         if getattr(args, "word_count", None):
             environment["COTABBY_PHRASE_WORD_COUNT"] = args.word_count
+        if bundle:
+            environment["COTABBY_EVAL_NEURAL_ENGINE_BUNDLE"] = str(bundle.resolve())
         typing_artifact = host.parent / "typing.json"
         if getattr(args, "runtime_checks", False):
             environment["COTABBY_TYPING_OUTPUT"] = str(typing_artifact)
@@ -788,6 +799,9 @@ def main():
         command.add_argument("--seed", type=int, help="Fixed test sampling seed (1–4294967294); default: 42")
         if name == "run":
             command.add_argument("--model", type=pathlib.Path, help="Local GGUF; defaults to app runtime model")
+            command.add_argument("--neural-engine-bundle", type=pathlib.Path,
+                                 help="Exported Core AI model bundle folder; replays through the Neural Engine engine "
+                                      "with one worker instead of llama.cpp")
             # The app needs the pinned, patched CotabbyInference; the bare project resolves the remote
             # package, which lacks those APIs until the pending upstream change lands.
             command.add_argument("--workspace", type=pathlib.Path,

@@ -21,6 +21,8 @@ enum SettingsAttentionEvaluator {
         let llamaRuntimeFailedReason: String?
         let endpointConfigurationError: String?
         let endpointConnectionFailedReason: String?
+        /// Defaulted so callers that predate the Neural Engine engine keep compiling.
+        var neuralEngineFailedReason: String? = nil
     }
 
     /// Returns the set of categories that should render an attention dot in the sidebar.
@@ -42,6 +44,10 @@ enum SettingsAttentionEvaluator {
             }
         case .openAICompatible:
             if inputs.endpointConfigurationError != nil || inputs.endpointConnectionFailedReason != nil {
+                categories.insert(.engineAndModel)
+            }
+        case .neuralEngine:
+            if inputs.neuralEngineFailedReason != nil {
                 categories.insert(.engineAndModel)
             }
         }

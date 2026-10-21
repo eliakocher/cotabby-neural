@@ -27,6 +27,7 @@ struct CotabbyApp: App {
                 suggestionSettings: appDelegate.suggestionSettings,
                 foundationModelAvailabilityService: appDelegate.foundationModelAvailabilityService,
                 powerSourceMonitor: appDelegate.powerSourceMonitor,
+                neuralEngineRuntime: appDelegate.neuralEngineRuntime,
                 appUpdateManager: appDelegate.appUpdateManager,
                 onOpenSettings: {
                     appDelegate.settingsCoordinator.showSettings()
@@ -46,7 +47,8 @@ struct CotabbyApp: App {
         } label: {
             MenuBarStatusLabelView(
                 suggestionCoordinator: appDelegate.suggestionCoordinator,
-                suggestionSettings: appDelegate.suggestionSettings
+                suggestionSettings: appDelegate.suggestionSettings,
+                neuralEngineRuntime: appDelegate.neuralEngineRuntime
             )
         }
         .menuBarExtraStyle(.window)

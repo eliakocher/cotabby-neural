@@ -11,7 +11,8 @@ final class SettingsAttentionEvaluatorTests: XCTestCase {
         foundationModelAvailable: Bool = true,
         llamaRuntimeFailedReason: String? = nil,
         endpointConfigurationError: String? = nil,
-        endpointConnectionFailedReason: String? = nil
+        endpointConnectionFailedReason: String? = nil,
+        neuralEngineFailedReason: String? = nil
     ) -> SettingsAttentionEvaluator.Inputs {
         SettingsAttentionEvaluator.Inputs(
             permissionsGranted: permissionsGranted,
@@ -19,7 +20,23 @@ final class SettingsAttentionEvaluatorTests: XCTestCase {
             foundationModelAvailable: foundationModelAvailable,
             llamaRuntimeFailedReason: llamaRuntimeFailedReason,
             endpointConfigurationError: endpointConfigurationError,
-            endpointConnectionFailedReason: endpointConnectionFailedReason
+            endpointConnectionFailedReason: endpointConnectionFailedReason,
+            neuralEngineFailedReason: neuralEngineFailedReason
+        )
+    }
+
+    func test_neuralEngineFailure_flagsEngineAndModelOnlyWhenSelected() {
+        XCTAssertEqual(
+            SettingsAttentionEvaluator.categoriesNeedingAttention(
+                makeInputs(selectedEngine: .neuralEngine, neuralEngineFailedReason: "No model found")
+            ),
+            [.engineAndModel]
+        )
+        XCTAssertEqual(
+            SettingsAttentionEvaluator.categoriesNeedingAttention(
+                makeInputs(selectedEngine: .llamaOpenSource, neuralEngineFailedReason: "No model found")
+            ),
+            []
         )
     }
 

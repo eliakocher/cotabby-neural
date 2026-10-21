@@ -63,6 +63,7 @@ Cotabby/
 │   ├── Runtime/
 │   │   ├── AppleIntelligence/        Foundation Models availability and engine
 │   │   ├── Llama/                    llama engine, manager, and native core
+│   │   ├── NeuralEngine/             Core AI (Neural Engine) engine, manager, and actor core
 │   │   └── OpenAICompatible/         endpoint transport, credentials, and engine
 │   ├── Spelling/                     live spell-checking services
 │   ├── Suggestion/
@@ -92,12 +93,14 @@ Cotabby/
 │   ├── Prompting/                    Apple and base-model prompt rendering
 │   ├── Runtime/
 │   │   ├── Hardware/                 device capability and resource sampling
+│   │   ├── NeuralEngine/             vocabulary, sampler, cache reuse, and bundle discovery
 │   │   ├── BundledRuntimeLocator.swift
 │   │   ├── DecodeStopPolicy.swift
 │   │   ├── DownloadOutcomeClassifier.swift
 │   │   ├── LocalRuntimeResidencyPolicy.swift  when the local model stays loaded
 │   │   ├── TokenHealingPlan.swift    bounded word-fragment retokenization at the caret
-│   │   └── TokenHealingBuffer.swift  exact byte replay and lossless streamed UTF-8
+│   │   ├── TokenHealingBuffer.swift  exact byte replay and lossless streamed UTF-8
+│   │   └── TokenHealingVocabulary.swift  tokens allowed while a healed prefix replays
 │   ├── Settings/                     persistence and settings policies
 │   ├── Spelling/                     extraction, language, SymSpell, and typo rules
 │   ├── Suggestion/

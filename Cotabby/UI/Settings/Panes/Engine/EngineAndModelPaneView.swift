@@ -11,6 +11,7 @@ struct EngineAndModelPaneView: View {
     @ObservedObject var openAICompatibleConnectionModel: OpenAICompatibleConnectionModel
     @ObservedObject var foundationModelAvailabilityService: FoundationModelAvailabilityService
     @ObservedObject var runtimeModel: RuntimeBootstrapModel
+    @ObservedObject var neuralEngineRuntime: NeuralEngineRuntimeManager
     @ObservedObject var modelDownloadManager: ModelDownloadManager
     @ObservedObject var huggingFaceSearchService: HuggingFaceSearchService
 
@@ -47,7 +48,8 @@ struct EngineAndModelPaneView: View {
                         title: "Engine",
                         description: "Apple Intelligence runs on-device using macOS's built-in model " +
                             "(newer Apple Silicon Macs only). Open Source runs a downloaded model file. " +
-                            "Local Endpoint connects to an OpenAI-compatible server you manage.",
+                            "Local Endpoint connects to an OpenAI-compatible server you manage. " +
+                            "Neural Engine runs a base model on the Neural Engine instead of the GPU.",
                         systemImage: "cpu"
                     )
                 }
@@ -64,6 +66,8 @@ struct EngineAndModelPaneView: View {
                 openSourceSections
             case .openAICompatible:
                 openAICompatibleSections
+            case .neuralEngine:
+                neuralEngineSections
             }
         }
         .onAppear {

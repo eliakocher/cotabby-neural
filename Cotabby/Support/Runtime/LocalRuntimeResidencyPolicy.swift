@@ -28,6 +28,10 @@ enum LocalRuntimeResidencyPolicy {
         case .openAICompatible:
             // The endpoint runs its own model, so a resident GGUF would only double memory use.
             return false
+        case .neuralEngine:
+            // The Neural Engine engine has its own model and never falls back to llama; a resident
+            // GGUF would only hold memory and the GPU this engine exists to leave alone.
+            return false
         }
     }
 }

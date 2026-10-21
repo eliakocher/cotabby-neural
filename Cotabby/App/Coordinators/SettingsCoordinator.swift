@@ -18,6 +18,7 @@ final class SettingsCoordinator: NSObject, NSWindowDelegate {
     private let openAICompatibleConnectionModel: OpenAICompatibleConnectionModel
     private let foundationModelAvailabilityService: FoundationModelAvailabilityService
     private let runtimeModel: RuntimeBootstrapModel
+    private let neuralEngineRuntime: NeuralEngineRuntimeManager
     private let modelDownloadManager: ModelDownloadManager
     private let huggingFaceSearchService: HuggingFaceSearchService
     private let performanceMetricsStore: PerformanceMetricsStore
@@ -44,6 +45,7 @@ final class SettingsCoordinator: NSObject, NSWindowDelegate {
         openAICompatibleConnectionModel: OpenAICompatibleConnectionModel,
         foundationModelAvailabilityService: FoundationModelAvailabilityService,
         runtimeModel: RuntimeBootstrapModel,
+        neuralEngineRuntime: NeuralEngineRuntimeManager,
         modelDownloadManager: ModelDownloadManager,
         huggingFaceSearchService: HuggingFaceSearchService,
         performanceMetricsStore: PerformanceMetricsStore,
@@ -60,6 +62,7 @@ final class SettingsCoordinator: NSObject, NSWindowDelegate {
         self.openAICompatibleConnectionModel = openAICompatibleConnectionModel
         self.foundationModelAvailabilityService = foundationModelAvailabilityService
         self.runtimeModel = runtimeModel
+        self.neuralEngineRuntime = neuralEngineRuntime
         self.modelDownloadManager = modelDownloadManager
         self.huggingFaceSearchService = huggingFaceSearchService
         self.performanceMetricsStore = performanceMetricsStore
@@ -90,6 +93,7 @@ final class SettingsCoordinator: NSObject, NSWindowDelegate {
                     openAICompatibleConnectionModel: openAICompatibleConnectionModel,
                     foundationModelAvailabilityService: foundationModelAvailabilityService,
                     runtimeModel: runtimeModel,
+                    neuralEngineRuntime: neuralEngineRuntime,
                     modelDownloadManager: modelDownloadManager,
                     huggingFaceSearchService: huggingFaceSearchService,
                     performanceMetricsStore: performanceMetricsStore,

@@ -531,7 +531,7 @@ extension WelcomeView {
                 return false
             }
             return state == .downloaded || state.isDownloading
-        case .openAICompatible:
+        case .openAICompatible, .neuralEngine:
             return true
         }
     }

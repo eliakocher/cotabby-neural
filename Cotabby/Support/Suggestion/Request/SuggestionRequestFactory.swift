@@ -191,7 +191,8 @@ enum SuggestionRequestFactory {
         case .llamaOpenSource:
             maxCharacters = configuration.maxPrefixCharacters
             maxWords = configuration.maxPrefixWords
-        case .openAICompatible:
+        case .openAICompatible, .neuralEngine:
+            // Both run the same raw-continuation base-model prompt as llama.
             maxCharacters = configuration.maxPrefixCharacters
             maxWords = configuration.maxPrefixWords
         }
@@ -315,7 +316,7 @@ enum SuggestionRequestFactory {
             return FoundationModelPromptRenderer.promptPreview(for: request)
         case .llamaOpenSource:
             return request.prompt
-        case .openAICompatible:
+        case .openAICompatible, .neuralEngine:
             return request.prompt
         }
     }

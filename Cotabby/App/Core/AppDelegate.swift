@@ -17,6 +17,7 @@ import Logging
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let permissionManager: PermissionManager
     let runtimeModel: RuntimeBootstrapModel
+    let neuralEngineRuntime: NeuralEngineRuntimeManager
     let modelDownloadManager: ModelDownloadManager
     let focusModel: FocusTrackingModel
     let inputMonitor: InputMonitor
@@ -49,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.environment = environment
         permissionManager = environment.permissionManager
         runtimeModel = environment.runtimeModel
+        neuralEngineRuntime = environment.neuralEngineRuntime
         modelDownloadManager = environment.modelDownloadManager
         focusModel = environment.focusModel
         inputMonitor = environment.inputMonitor
@@ -91,6 +93,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .dropFirst()
             .sink { [weak self] keepsModelLoaded in
                 self?.applyRuntimeResidency(keepsModelLoaded: keepsModelLoaded)
+            }
+            .store(in: &cancellables)
+
+        // The Neural Engine model follows the same rule with a simpler input: it stays loaded only
+        // while its engine is selected. Same `willSet` caveat as above, so act on the emitted value.
+        suggestionSettings.$selectedEngine
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] engine in
+                self?.applyNeuralEngineResidency(engine: engine)
             }
             .store(in: &cancellables)
 
@@ -288,6 +300,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// work for everyone else. Safe to call outside a `@Published` sink, where settings are current.
     private func startRuntimeIfPreferredEngineRequiresIt() {
         applyRuntimeResidency(keepsModelLoaded: suggestionSettings.keepsLocalRuntimeLoaded)
+        applyNeuralEngineResidency(engine: suggestionSettings.selectedEngine)
+    }
+
+    /// Loads the Neural Engine model while its engine is selected and releases it otherwise, so it
+    /// never holds memory (or the Neural Engine) behind another engine's back.
+    private func applyNeuralEngineResidency(engine: SuggestionEngineKind) {
+        if engine == .neuralEngine {
+            neuralEngineRuntime.startIfNeeded()
+        } else {
+            neuralEngineRuntime.stop()
+        }
     }
 
     /// Starts or stops the runtime for a decision from `LocalRuntimeResidencyPolicy`.

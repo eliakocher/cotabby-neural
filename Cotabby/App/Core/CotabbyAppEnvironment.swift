@@ -13,6 +13,8 @@ import Logging
 final class CotabbyAppEnvironment {
     let permissionManager: PermissionManager
     let runtimeModel: RuntimeBootstrapModel
+    /// Core AI runtime for the Neural Engine engine; `AppDelegate` loads it only while selected.
+    let neuralEngineRuntime: NeuralEngineRuntimeManager
     let modelDownloadManager: ModelDownloadManager
     let focusModel: FocusTrackingModel
     let inputMonitor: InputMonitor
@@ -56,6 +58,7 @@ final class CotabbyAppEnvironment {
         )
         let runtimeManager = LlamaRuntimeManager()
         let runtimeModel = RuntimeBootstrapModel(runtimeManager: runtimeManager)
+        let neuralEngineRuntime = NeuralEngineRuntimeManager()
         let modelDownloadManager = ModelDownloadManager()
         let endpointCredentialStore = KeychainOpenAICompatibleCredentialStore()
         let suggestionSettings = SuggestionSettingsModel(
@@ -220,6 +223,10 @@ final class CotabbyAppEnvironment {
             ),
             endpointModelNameProvider: { [weak suggestionSettings] in
                 suggestionSettings?.openAICompatibleModelName.nonEmpty
+            },
+            neuralEngine: NeuralEngineSuggestionEngine(runtimeManager: neuralEngineRuntime),
+            neuralEngineModelNameProvider: { [weak neuralEngineRuntime] in
+                neuralEngineRuntime?.currentModelName
             }
         )
         // Under `-cotabby-debug` with `cotabbyDebugForcedSuggestion` set, every request answers with
@@ -251,6 +258,7 @@ final class CotabbyAppEnvironment {
             openAICompatibleConnectionModel: openAICompatibleConnectionModel,
             foundationModelAvailabilityService: foundationModelAvailabilityService,
             runtimeModel: runtimeModel,
+            neuralEngineRuntime: neuralEngineRuntime,
             modelDownloadManager: modelDownloadManager,
             huggingFaceSearchService: huggingFaceSearchService,
             performanceMetricsStore: performanceMetricsStore,
@@ -344,6 +352,7 @@ final class CotabbyAppEnvironment {
 
         self.permissionManager = permissionManager
         self.runtimeModel = runtimeModel
+        self.neuralEngineRuntime = neuralEngineRuntime
         self.modelDownloadManager = modelDownloadManager
         self.focusModel = focusModel
         self.inputMonitor = inputMonitor
@@ -500,6 +509,8 @@ final class CotabbyAppEnvironment {
             guard !modelName.isEmpty else { return }
             suggestionSettings.setOpenAICompatibleModelName(modelName)
             suggestionSettings.selectEngine(.openAICompatible)
+        case .neuralEngine:
+            suggestionSettings.selectEngine(.neuralEngine)
         }
     }
 

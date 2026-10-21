@@ -17,6 +17,7 @@ struct HomePaneView: View {
     @ObservedObject var permissionManager: PermissionManager
     @ObservedObject var foundationModelAvailabilityService: FoundationModelAvailabilityService
     @ObservedObject var runtimeModel: RuntimeBootstrapModel
+    @ObservedObject var neuralEngineRuntime: NeuralEngineRuntimeManager
     @ObservedObject var openAICompatibleConnectionModel: OpenAICompatibleConnectionModel
     let attentionCategories: Set<SettingsCategory>
 
@@ -333,6 +334,19 @@ struct HomePaneView: View {
             return suggestionSettings.openAICompatibleModelName.isEmpty
                 ? "No model selected"
                 : suggestionSettings.openAICompatibleModelName
+        case .neuralEngine:
+            if neuralEngineRuntime.state.failureDetail != nil {
+                return "Unavailable"
+            }
+            // The first load after a macOS update takes minutes with no suggestions; say so here
+            // so the card doesn't read as ready while nothing appears.
+            if neuralEngineRuntime.isPreparing {
+                return "Preparing, takes a few minutes…"
+            }
+            if case .loading = neuralEngineRuntime.state {
+                return "Loading…"
+            }
+            return neuralEngineRuntime.selectedModel?.displayName ?? "No model found"
         }
     }
 

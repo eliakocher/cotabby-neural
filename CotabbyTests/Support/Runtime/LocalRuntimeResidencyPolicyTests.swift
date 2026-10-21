@@ -36,6 +36,21 @@ final class LocalRuntimeResidencyPolicyTests: XCTestCase {
         }
     }
 
+    func test_neuralEngineNeverKeepsTheLlamaModelLoaded() {
+        for fallback in [false, true] {
+            for keepLoaded in [false, true] {
+                XCTAssertFalse(
+                    LocalRuntimeResidencyPolicy.keepsModelLoaded(
+                        engine: .neuralEngine,
+                        isAppleLanguageFallbackEnabled: fallback,
+                        keepsFallbackModelLoaded: keepLoaded
+                    ),
+                    "The Neural Engine engine never falls back to llama; a resident GGUF would hold the GPU it avoids"
+                )
+            }
+        }
+    }
+
     func test_appleIntelligenceKeepsTheModelLoadedOnlyWhenBothFallbackSwitchesAreOn() {
         let cases: [(fallback: Bool, keepLoaded: Bool, expected: Bool)] = [
             (false, false, false),
