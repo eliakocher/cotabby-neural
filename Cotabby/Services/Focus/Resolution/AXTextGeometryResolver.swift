@@ -82,7 +82,10 @@ struct AXTextGeometryResolver {
         textSelection: NSRange? = nil,
         staticRunThrottle: StaticTextRunWalkThrottle? = nil,
         focusChangeSequence: UInt64 = 0,
-        supportsLineQueries: Bool = false
+        supportsLineQueries: Bool = false,
+        // Gecko hosts: their caret box decides the line when character bounds disagree with it
+        // (see `GeckoCaretLinePolicy`).
+        prefersCaretBoxLine: Bool = false
     ) -> CaretGeometryResult? {
         let selectionInTextValue = textSelection ?? selection
 
@@ -112,8 +115,16 @@ struct AXTextGeometryResolver {
             )
             if rectIsNearAnchor(cocoaRect, anchor: cocoaAnchorFrame) {
                 let isRightToLeft = textValue.map(TextDirectionDetector.isRightToLeft) ?? false
+                let characterCaret = Self.caretRect(afterCharacterFrame: cocoaRect, rightToLeft: isRightToLeft)
+                // Gecko can report character bounds off the rendered line while its caret box stays
+                // on it; one extra query shows which line is real.
+                if prefersCaretBoxLine,
+                   let caretBox = geckoCaretBox(at: selection.location, on: element, anchorFrame: cocoaAnchorFrame),
+                   let corrected = GeckoCaretLinePolicy.correctedCaret(caretBox: caretBox, candidate: characterCaret) {
+                    return CaretGeometryResult(rect: corrected, quality: .exact, sourceDetail: "caret-box (gecko)")
+                }
                 return CaretGeometryResult(
-                    rect: Self.caretRect(afterCharacterFrame: cocoaRect, rightToLeft: isRightToLeft),
+                    rect: characterCaret,
                     quality: .exact,
                     sourceDetail: "previous-character"
                 )
@@ -144,7 +155,8 @@ struct AXTextGeometryResolver {
                         supportsLineQueries: supportsLineQueries,
                         anchorFrame: cocoaAnchorFrame,
                         isAtTextEndAfterNewline: previousCharacter?.isNewline == true
-                            && selectionInTextValue.location >= ((textValue ?? "") as NSString).length
+                            && selectionInTextValue.location >= ((textValue ?? "") as NSString).length,
+                        prefersCaretBoxLine: prefersCaretBoxLine
                     )
                 )
             }
@@ -702,6 +714,7 @@ struct AXTextGeometryResolver {
         let supportsLineQueries: Bool
         let anchorFrame: CGRect?
         let isAtTextEndAfterNewline: Bool
+        let prefersCaretBoxLine: Bool
     }
 
     private func zeroLengthCaretResult(_ rect: CGRect, context: ZeroLengthCaretContext) -> CaretGeometryResult {
@@ -711,11 +724,14 @@ struct AXTextGeometryResolver {
                caretLocation: context.caretLocation,
                cocoaAnchorFrame: context.anchorFrame
            ) {
-            return CaretGeometryResult(
-                rect: CGRect(x: rect.minX, y: lineBox.minY, width: rect.width, height: lineBox.height),
-                quality: .exact,
-                sourceDetail: "zero-length+line"
-            )
+            let lineCaret = CGRect(x: rect.minX, y: lineBox.minY, width: rect.width, height: lineBox.height)
+            // The line box is measured from character bounds, which Gecko can report off the
+            // rendered line; its caret box is the one that stays on it.
+            if context.prefersCaretBoxLine,
+               let corrected = GeckoCaretLinePolicy.correctedCaret(caretBox: rect, candidate: lineCaret) {
+                return CaretGeometryResult(rect: corrected, quality: .exact, sourceDetail: "zero-length (gecko)")
+            }
+            return CaretGeometryResult(rect: lineCaret, quality: .exact, sourceDetail: "zero-length+line")
         }
         if context.isAtTextEndAfterNewline {
             return CaretGeometryResult(rect: rect, quality: .estimated, sourceDetail: "zero-length-after-break")
@@ -1176,6 +1192,23 @@ struct AXTextGeometryResolver {
         let tolerance: CGFloat = 80
         let expanded = anchor.insetBy(dx: -tolerance, dy: -tolerance)
         return expanded.contains(CGPoint(x: cocoaRect.midX, y: cocoaRect.midY))
+    }
+
+    /// The host's zero-length caret box at `location`, for checking a Gecko character answer against.
+    /// Unlike the Branch 1.2 query, it skips the distance-from-field check: when Gecko shifts its
+    /// character bounds it shifts the field frame with them, so a correct caret box can sit outside
+    /// the field's reported halo. `GeckoCaretLinePolicy` checks it instead, by requiring the same x
+    /// as the character answer.
+    private func geckoCaretBox(at location: Int, on element: AXUIElement, anchorFrame: CGRect?) -> CGRect? {
+        guard let rect = AXHelper.parameterizedRectValue(
+            for: kAXBoundsForRangeParameterizedAttribute as CFString,
+            range: NSRange(location: location, length: 0),
+            on: element
+        ), rect.height > 0, AXHelper.rectHasFiniteComponents(rect) else {
+            return nil
+        }
+        let cocoaRect = AXHelper.validatedCocoaTextRect(fromAccessibilityRect: rect, anchorFrame: anchorFrame)
+        return normalizedCaretRect(fromZeroLengthRangeRect: cocoaRect)
     }
 
     /// Some browser-based editors return a full line fragment for a zero-length range instead of

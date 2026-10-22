@@ -136,7 +136,11 @@ last line break (`WrappedRunAnchor` hands both that run and a single-line paragr
 box, and carries it forward by the typed advance while the ghost covers the run);
 Chromium's address bar keeps its inline completion selected after the caret (stripped by the
 resolver and held as the host's marked text, never treated as a user selection) and answers every
-bounds query with a zero rect (the caret comes from its pixels, `PixelCaretLocator`); Mail's compose
+bounds query with a zero rect (the caret comes from its pixels, `PixelCaretLocator`); Gecko (Firefox, Zen) can report
+character bounds and the field's frame shifted vertically off the rendered line (64 pt on Gemini's
+composer) while its zero-length caret box ends on the real line's bottom with a height that wanders
+(21.5 pt, later 53.5 pt), so for Gecko hosts a disagreeing caret takes its line from the caret
+box's bottom and its height from the character answer (`GeckoCaretLinePolicy`); Mail's compose
 header rows are `AXTextField`s with identifiers `Mail.toField`, `Mail.ccField`, `Mail.subjectField`
 where Tab moves to the next field, so they are blocked (`MailHeaderFieldDetector`), and the body is
 an `AXWebArea` described "message body". A Chromium or Electron host reports its font size in CSS

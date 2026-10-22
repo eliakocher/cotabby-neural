@@ -1102,7 +1102,8 @@ struct FocusSnapshotResolver {
                 focusChangeSequence: focusChangeSequence,
                 supportsLineQueries: markerSelection == nil
                     && supportedParameterizedAttributes.contains(kAXLineForIndexParameterizedAttribute as String)
-                    && supportedParameterizedAttributes.contains(kAXRangeForLineParameterizedAttribute as String)
+                    && supportedParameterizedAttributes.contains(kAXRangeForLineParameterizedAttribute as String),
+                prefersCaretBoxLine: BrowserAppDetector.isGeckoEngine(bundleIdentifier: bundleIdentifier)
             )
         }
         let caretRect = caretResult?.rect

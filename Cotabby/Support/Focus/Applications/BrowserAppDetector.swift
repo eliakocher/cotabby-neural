@@ -2,7 +2,7 @@ import Foundation
 
 /// Classifies applications by browser family from their bundle identifier.
 ///
-/// Two distinct questions live here on purpose:
+/// Three distinct questions live here on purpose:
 ///
 /// - `isBrowser` is the broad "is the user typing in a web browser" check used for prompt tone
 ///   hints. It includes Safari and Firefox.
@@ -12,6 +12,8 @@ import Foundation
 ///   Safari/Firefox: WebKit builds its accessibility tree without an assistive client flipping a
 ///   flag, and Gecko does not use the Chromium text-marker model, so priming/hit-testing buys
 ///   nothing there and would only widen the blast radius.
+/// - `isGeckoEngine` is the "does this app render with Firefox's engine" check that lets caret
+///   geometry trust Gecko's caret box over its character bounds (see `GeckoCaretLinePolicy`).
 ///
 /// Matching is by case-insensitive bundle-identifier prefix to tolerate channel suffixes
 /// (`com.google.Chrome.canary`, `com.google.Chrome.beta`, etc.).
@@ -34,6 +36,14 @@ nonisolated enum BrowserAppDetector {
         "company.thebrowser.browser",  // Arc
         "com.brave.browser",
         "com.microsoft.edgemac"
+    ]
+
+    /// Apps built on Gecko, Firefox's engine. `org.mozilla.` covers Firefox and its Developer
+    /// Edition and Nightly channels, plus Thunderbird, which shares the engine. Other Gecko forks
+    /// join by their own bundle prefix.
+    private static let geckoBundlePrefixes: [String] = [
+        "org.mozilla.",
+        "app.zen-browser."  // Zen
     ]
 
     /// Electron apps (Chromium under the hood) that ship editors worth covering. This is an
@@ -76,6 +86,11 @@ nonisolated enum BrowserAppDetector {
     /// Narrow check: is this a Chromium-family browser (web content via lazy web-AX + text markers)?
     static func isChromiumBrowser(bundleIdentifier: String?) -> Bool {
         hasMatchingPrefix(bundleIdentifier, in: chromiumBundlePrefixes)
+    }
+
+    /// Narrow check: does this app render its web text with Gecko (Firefox's engine)?
+    static func isGeckoEngine(bundleIdentifier: String?) -> Bool {
+        hasMatchingPrefix(bundleIdentifier, in: geckoBundlePrefixes)
     }
 
     /// Is this a named Electron editor we intentionally cover? Case-insensitive because macOS bundle

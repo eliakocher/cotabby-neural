@@ -57,6 +57,17 @@ Small edits to upstream files (wiring):
 - `AGENTS.md`, `SOURCE_LAYOUT.md`, `CONTRIBUTING.md`: docs. `README.md`: rewritten as the fork's
   front page.
 
+## Fixes on top of upstream
+
+- **Ghost text in Zen/Firefox floated above the input box** on pages like Gemini. Gecko reports a
+  field's character positions, and the field itself, shifted vertically (64 pt there). Only the
+  bottom of its caret box sits on the real line, and that box's height varies. Cotabby trusted
+  the shifted answer, because the field it checked against was shifted the same way.
+  `GeckoCaretLinePolicy` (a pure rule, with tests) takes the line from the caret box's bottom and
+  the height from the character answer whenever the two disagree. `BrowserAppDetector.isGeckoEngine`
+  limits it to Firefox-engine apps; `AXTextGeometryResolver` applies it. This doesn't depend on
+  macOS 27, so it could be offered upstream as a standalone PR.
+
 ## The model (not in git)
 
 - **Bundle location:** `~/Library/Application Support/Cotabby Dev/NeuralEngine/qwen3_0_6b_base_qwen3_1_7b_6bit_static/`

@@ -84,4 +84,22 @@ final class BrowserAppDetectorTests: XCTestCase {
         XCTAssertFalse(
             BrowserAppDetector.needsWebAccessibilityPriming(bundleIdentifier: nil))
     }
+
+    func testGeckoEngineCoversFirefoxFamilyAndZenOnly() {
+        for bundleIdentifier in [
+            "org.mozilla.firefox",
+            "org.mozilla.nightly",
+            "org.mozilla.firefoxdeveloperedition",
+            "org.mozilla.thunderbird",
+            "app.zen-browser.zen"
+        ] {
+            XCTAssertTrue(BrowserAppDetector.isGeckoEngine(bundleIdentifier: bundleIdentifier), bundleIdentifier)
+        }
+        XCTAssertFalse(BrowserAppDetector.isGeckoEngine(bundleIdentifier: "com.google.Chrome"))
+        XCTAssertFalse(BrowserAppDetector.isGeckoEngine(bundleIdentifier: "com.apple.Safari"))
+        XCTAssertFalse(BrowserAppDetector.isGeckoEngine(bundleIdentifier: "com.apple.TextEdit"))
+        XCTAssertFalse(BrowserAppDetector.isGeckoEngine(bundleIdentifier: nil))
+        // Zen is Gecko, so it stays out of the Chromium-only recovery paths.
+        XCTAssertFalse(BrowserAppDetector.needsWebAccessibilityPriming(bundleIdentifier: "app.zen-browser.zen"))
+    }
 }
